@@ -9,7 +9,7 @@ data Expr
   | Abs {param :: String, body :: Expr}
   | App {fun :: Expr, arg :: Expr}
   | Lit Int
-  | Prim Binop Expr Expr
+  | Prim {op :: Binop, argA :: Expr, argB :: Expr}
   deriving (Show)
 
 data Binop
@@ -38,7 +38,7 @@ interprete context expr =
                   VInt v -> Just (VInt v)
                 _ -> Nothing
     Lit n -> Just (VInt n)
-    Prim op v v' ->
+    Prim {op = op, argA = v, argB = v'} ->
       case (interprete context v, interprete context v') of
         (Just v, Just v') -> Just (interpreteBinop op v v')
         _ -> interprete context v
@@ -55,21 +55,6 @@ idL = Abs {param = "x", body = Var "x"}
 callIdL :: Expr
 callIdL = App {fun = idL, arg = Abs {param = "y", body = Var "y"}}
 
-lambSum :: Int -> Int -> Expr
-lambSum x y =
-  App
-    ( App
-        ( Abs
-            "x"
-            (Abs 
-              "y" 
-              (Prim Add (Var "x") (Var "y"))
-            )
-        )
-        (Lit x)
-    )
-    (Lit y)
-
 sumL :: Int -> Int -> Expr
 sumL x y =
   App
@@ -81,7 +66,11 @@ sumL x y =
                   body =
                     Abs
                       { param = "y",
-                        body = Prim Add (Var "x") (Var "y")
+                        body = Prim { 
+                          op = Add, 
+                          argA = Var "x", 
+                          argB = Var "y" 
+                        }
                       }
                 },
             arg = Lit x
